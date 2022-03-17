@@ -1,3 +1,5 @@
+use std::error;
+
 use tokio;
 
 use crate::presentation::protocols::controller::ControllerProtocol;
@@ -12,25 +14,25 @@ fn make_sut() -> SignUpController {
 }
 
 fn make_email_validator() -> Box<dyn EmailValidator> {
-    make_email_validator_strategy(|_| true)
+    make_email_validator_strategy(|_| Ok(true))
 }
 
 fn make_email_validator_strategy<T>(strategy: T) -> Box<dyn EmailValidator>
 where
-    T: Fn(&str) -> bool + Sync + 'static,
+    T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Sync + 'static,
 {
     struct EmailValidatorStub<T>
     where
-        T: Fn(&str) -> bool + Sync,
+        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Sync,
     {
         strategy: T,
     }
 
     impl<T> EmailValidator for EmailValidatorStub<T>
     where
-        T: Fn(&str) -> bool + Sync,
+        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Sync,
     {
-        fn is_valid(&self, email: &str) -> bool {
+        fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
             let strategy = &self.strategy;
             strategy(email)
         }
@@ -145,7 +147,7 @@ pub async fn returns_400_if_password_confirmation_fails() {
 #[tokio::test]
 pub async fn returns_400_if_invalid_email_is_provided() {
     let mut sut = make_sut();
-    sut.set_email_validator(make_email_validator_strategy(|_| false));
+    sut.set_email_validator(make_email_validator_strategy(|_| Ok(false)));
 
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
@@ -169,7 +171,7 @@ pub async fn calls_email_validator_with_correct_email() {
     let mut sut = make_sut();
     sut.set_email_validator(make_email_validator_strategy(|email| {
         assert_eq!(email, "any_email@mail.com");
-        false
+        Ok(false)
     }));
 
     let body = SignUpReqBodyBuilder::new()
@@ -181,4 +183,28 @@ pub async fn calls_email_validator_with_correct_email() {
 
     let req = HttpRequest::new(Some(body));
     sut.handle(req).await;
+}
+
+#[tokio::test]
+pub async fn returns_500_if_email_validator_returns_err() {
+    let mut sut = make_sut();
+    sut.set_email_validator(make_email_validator_strategy(|_| {
+        Err(Box::new(ErrorMsg::default()))
+    }));
+
+    let body = SignUpReqBodyBuilder::new()
+        .set_name("any_name")
+        .set_email("any_email@mail.com")
+        .set_password("any_password")
+        .set_password_confirmation("any_password")
+        .build();
+
+    let req = HttpRequest::new(Some(body));
+    let res = sut.handle(req).await;
+
+    assert_eq!(res.status_code(), 500);
+    assert_eq!(
+        res.body(),
+        &SignUpResBody::Err(ErrorMsg::new("internal server error"))
+    );
 }
