@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::{
     presentation::{
         http::{HttpRequest, HttpResponse},
-        protocols::controller::ControllerProtocol,
+        protocols::{controller::ControllerProtocol, email_validator::EmailValidator},
     },
     ErrorMsg,
 };
@@ -11,11 +11,18 @@ use crate::{
 #[cfg(test)]
 pub mod tests;
 
-pub struct SignUpController;
+pub struct SignUpController {
+    email_validator: Box<dyn EmailValidator>,
+}
 
 impl SignUpController {
-    pub fn new() -> Self {
-        Self
+    pub fn new(email_validator: Box<dyn EmailValidator>) -> Self {
+        Self { email_validator }
+    }
+
+    /// Set the sign up controller's email validator.
+    pub fn set_email_validator(&mut self, email_validator: Box<dyn EmailValidator>) {
+        self.email_validator = email_validator;
     }
 }
 
@@ -48,6 +55,10 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
 
         if body.password() != body.password_confirmation() {
             return bad_request("invalid param 'password_confirmation'");
+        }
+
+        if !self.email_validator.is_valid(body.email()) {
+            return bad_request("invalid param 'email'");
         }
 
         HttpResponse::new(200, SignUpResBody::Account(0))
