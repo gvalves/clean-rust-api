@@ -1,7 +1,10 @@
 use std::error;
 
+use async_trait::async_trait;
 use tokio;
 
+use crate::domain::entities::account::AccountEntity;
+use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
 use crate::presentation::protocols::controller::ControllerProtocol;
 use crate::presentation::{http::HttpRequest, protocols::email_validator::EmailValidator};
 use crate::ErrorMsg;
@@ -10,7 +13,8 @@ use super::{SignUpController, SignUpReqBodyBuilder, SignUpResBody};
 
 fn make_sut() -> SignUpController {
     let email_validator = make_email_validator();
-    SignUpController::new(email_validator)
+    let add_account = make_add_account();
+    SignUpController::new(email_validator, add_account)
 }
 
 fn make_email_validator() -> Box<dyn EmailValidator> {
@@ -19,18 +23,18 @@ fn make_email_validator() -> Box<dyn EmailValidator> {
 
 fn make_email_validator_strategy<T>(strategy: T) -> Box<dyn EmailValidator>
 where
-    T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Sync + 'static,
+    T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync + 'static,
 {
     struct EmailValidatorStub<T>
     where
-        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Sync,
+        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync,
     {
         strategy: T,
     }
 
     impl<T> EmailValidator for EmailValidatorStub<T>
     where
-        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Sync,
+        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync,
     {
         fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
             let strategy = &self.strategy;
@@ -39,6 +43,43 @@ where
     }
 
     Box::new(EmailValidatorStub { strategy })
+}
+
+fn make_add_account() -> Box<dyn AddAccount> {
+    make_add_account_strategy(|account_dto| {
+        let AddAccountDto {
+            name,
+            email,
+            password,
+        } = account_dto;
+
+        AccountEntity::new("any_id", &name, &email, &password)
+    })
+}
+
+fn make_add_account_strategy<T>(strategy: T) -> Box<dyn AddAccount>
+where
+    T: Fn(AddAccountDto) -> AccountEntity + Send + Sync + 'static,
+{
+    struct AddAccountStub<T>
+    where
+        T: Fn(AddAccountDto) -> AccountEntity + Send + Sync,
+    {
+        strategy: T,
+    }
+
+    #[async_trait]
+    impl<T> AddAccount for AddAccountStub<T>
+    where
+        T: Fn(AddAccountDto) -> AccountEntity + Send + Sync,
+    {
+        async fn add(&self, account_dto: AddAccountDto) -> AccountEntity {
+            let strategy = &self.strategy;
+            strategy(account_dto)
+        }
+    }
+
+    Box::new(AddAccountStub { strategy })
 }
 
 #[tokio::test]
@@ -207,4 +248,32 @@ pub async fn returns_500_if_email_validator_returns_err() {
         res.body(),
         &SignUpResBody::Err(ErrorMsg::new("internal server error"))
     );
+}
+
+#[tokio::test]
+pub async fn calls_add_account_with_correct_values() {
+    let mut sut = make_sut();
+    sut.set_add_account(make_add_account_strategy(|account_dto| {
+        let AddAccountDto {
+            name,
+            email,
+            password,
+        } = account_dto;
+
+        assert_eq!(name, "any_name");
+        assert_eq!(email, "any_email@mail.com");
+        assert_eq!(password, "any_password");
+
+        AccountEntity::new("any_id", &name, &email, &password)
+    }));
+
+    let body = SignUpReqBodyBuilder::new()
+        .set_name("any_name")
+        .set_email("any_email@mail.com")
+        .set_password("any_password")
+        .set_password_confirmation("any_password")
+        .build();
+
+    let req = HttpRequest::new(Some(body));
+    sut.handle(req).await;
 }
