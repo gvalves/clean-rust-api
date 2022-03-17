@@ -83,7 +83,7 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
             Err(_) => return server_error(),
         }
 
-        let account = self
+        let result = self
             .add_account
             .add(AddAccountDto {
                 name: name.to_string(),
@@ -91,6 +91,11 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
                 password: password.to_string(),
             })
             .await;
+
+        let account = match result {
+            Ok(account) => account,
+            Err(_) => return server_error(),
+        };
 
         HttpResponse::new(200, SignUpResBody::Account(account))
     }
