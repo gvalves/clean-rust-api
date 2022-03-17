@@ -20,17 +20,121 @@ impl SignUpController {
 }
 
 #[async_trait]
-impl ControllerProtocol<SignUpBodyReq, SignUpBodyRes> for SignUpController {
-    async fn handle(&self, req: HttpRequest<SignUpBodyReq>) -> HttpResponse<SignUpBodyRes> {
-        HttpResponse::new(400, SignUpBodyRes::Err(ErrorMsg::new("missing body")))
+impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
+    async fn handle(&self, req: HttpRequest<SignUpReqBody>) -> HttpResponse<SignUpResBody> {
+        let body = req.body();
+
+        if body.is_none() {
+            return HttpResponse::new(400, SignUpResBody::Err(ErrorMsg::new("missing body")));
+        }
+
+        let body = body.unwrap();
+
+        if body.name().is_empty() {
+            return HttpResponse::new(
+                400,
+                SignUpResBody::Err(ErrorMsg::new("missing param 'name'")),
+            );
+        }
+
+        HttpResponse::new(200, SignUpResBody::Account(0))
     }
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
-struct SignUpBodyReq {}
+pub struct SignUpReqBody {
+    name: String,
+    email: String,
+    password: String,
+    password_confirmation: String,
+}
+
+impl SignUpReqBody {
+    /// Get a reference to the sign up req body's name.
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
+    /// Get a reference to the sign up req body's email.
+    pub fn email(&self) -> &str {
+        self.email.as_ref()
+    }
+
+    /// Get a reference to the sign up req body's password.
+    pub fn password(&self) -> &str {
+        self.password.as_ref()
+    }
+
+    /// Get a reference to the sign up req body's password confirmation.
+    pub fn password_confirmation(&self) -> &str {
+        self.password_confirmation.as_ref()
+    }
+}
+
+pub struct SignUpReqBodyBuilder {
+    name: String,
+    email: String,
+    password: String,
+    password_confirmation: String,
+}
+
+impl SignUpReqBodyBuilder {
+    pub fn new() -> Self {
+        Self {
+            name: String::new(),
+            email: String::new(),
+            password: String::new(),
+            password_confirmation: String::new(),
+        }
+    }
+
+    pub fn build(self) -> SignUpReqBody {
+        let Self {
+            name,
+            email,
+            password,
+            password_confirmation,
+        } = self;
+
+        SignUpReqBody {
+            name,
+            email,
+            password,
+            password_confirmation,
+        }
+    }
+
+    /// Set the sign up req body builder's name.
+    pub fn set_name(self, name: &str) -> Self {
+        let mut this = self;
+        this.name = String::from(name);
+        this
+    }
+
+    /// Set the sign up req body builder's email.
+    pub fn set_email(self, email: &str) -> Self {
+        let mut this = self;
+        this.email = String::from(email);
+        this
+    }
+
+    /// Set the sign up req body builder's password.
+    pub fn set_password(self, password: &str) -> Self {
+        let mut this = self;
+        this.password = String::from(password);
+        this
+    }
+
+    /// Set the sign up req body builder's password confirmation.
+    pub fn set_password_confirmation(self, password_confirmation: &str) -> Self {
+        let mut this = self;
+        this.password_confirmation = String::from(password_confirmation);
+        this
+    }
+}
 
 #[derive(Debug, PartialEq, PartialOrd)]
-enum SignUpBodyRes {
+pub enum SignUpResBody {
     Account(u32),
     Err(ErrorMsg),
 }
