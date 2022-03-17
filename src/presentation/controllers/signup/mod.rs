@@ -42,6 +42,10 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
             return bad_request("missing param 'password'");
         }
 
+        if body.password_confirmation().is_empty() {
+            return bad_request("missing param 'password confirmation'");
+        }
+
         HttpResponse::new(200, SignUpResBody::Account(0))
     }
 }
