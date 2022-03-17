@@ -53,17 +53,17 @@ fn make_add_account() -> Box<dyn AddAccount> {
             password,
         } = account_dto;
 
-        AccountEntity::new("any_id", &name, &email, &password)
+        Ok(AccountEntity::new("any_id", &name, &email, &password))
     })
 }
 
 fn make_add_account_strategy<T>(strategy: T) -> Box<dyn AddAccount>
 where
-    T: Fn(AddAccountDto) -> AccountEntity + Send + Sync + 'static,
+    T: Fn(AddAccountDto) -> Result<AccountEntity, Box<dyn error::Error>> + Send + Sync + 'static,
 {
     struct AddAccountStub<T>
     where
-        T: Fn(AddAccountDto) -> AccountEntity + Send + Sync,
+        T: Fn(AddAccountDto) -> Result<AccountEntity, Box<dyn error::Error>> + Send + Sync,
     {
         strategy: T,
     }
@@ -71,9 +71,12 @@ where
     #[async_trait]
     impl<T> AddAccount for AddAccountStub<T>
     where
-        T: Fn(AddAccountDto) -> AccountEntity + Send + Sync,
+        T: Fn(AddAccountDto) -> Result<AccountEntity, Box<dyn error::Error>> + Send + Sync,
     {
-        async fn add(&self, account_dto: AddAccountDto) -> AccountEntity {
+        async fn add(
+            &self,
+            account_dto: AddAccountDto,
+        ) -> Result<AccountEntity, Box<dyn error::Error>> {
             let strategy = &self.strategy;
             strategy(account_dto)
         }
@@ -264,7 +267,7 @@ pub async fn calls_add_account_with_correct_values() {
         assert_eq!(email, "any_email@mail.com");
         assert_eq!(password, "any_password");
 
-        AccountEntity::new("any_id", &name, &email, &password)
+        Ok(AccountEntity::new("any_id", &name, &email, &password))
     }));
 
     let body = SignUpReqBodyBuilder::new()
@@ -276,4 +279,28 @@ pub async fn calls_add_account_with_correct_values() {
 
     let req = HttpRequest::new(Some(body));
     sut.handle(req).await;
+}
+
+#[tokio::test]
+pub async fn returns_500_if_add_account_returns_err() {
+    let mut sut = make_sut();
+    sut.set_add_account(make_add_account_strategy(|_| {
+        Err(Box::new(ErrorMsg::default()))
+    }));
+
+    let body = SignUpReqBodyBuilder::new()
+        .set_name("any_name")
+        .set_email("any_email@mail.com")
+        .set_password("any_password")
+        .set_password_confirmation("any_password")
+        .build();
+
+    let req = HttpRequest::new(Some(body));
+    let res = sut.handle(req).await;
+
+    assert_eq!(res.status_code(), 500);
+    assert_eq!(
+        res.body(),
+        &SignUpResBody::Err(ErrorMsg::new("internal server error"))
+    );
 }
