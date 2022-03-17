@@ -1,6 +1,10 @@
 use async_trait::async_trait;
 
 use crate::{
+    domain::{
+        entities::account::AccountEntity,
+        usecases::add_account::{AddAccount, AddAccountDto},
+    },
     presentation::{
         http::{HttpRequest, HttpResponse},
         protocols::{controller::ControllerProtocol, email_validator::EmailValidator},
@@ -13,16 +17,25 @@ pub mod tests;
 
 pub struct SignUpController {
     email_validator: Box<dyn EmailValidator>,
+    add_account: Box<dyn AddAccount>,
 }
 
 impl SignUpController {
-    pub fn new(email_validator: Box<dyn EmailValidator>) -> Self {
-        Self { email_validator }
+    pub fn new(email_validator: Box<dyn EmailValidator>, add_account: Box<dyn AddAccount>) -> Self {
+        Self {
+            email_validator,
+            add_account,
+        }
     }
 
     /// Set the sign up controller's email validator.
     pub fn set_email_validator(&mut self, email_validator: Box<dyn EmailValidator>) {
         self.email_validator = email_validator;
+    }
+
+    /// Set the sign up controller's add account.
+    pub fn set_add_account(&mut self, add_account: Box<dyn AddAccount>) {
+        self.add_account = add_account;
     }
 }
 
@@ -36,28 +49,32 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
         }
 
         let body = body.unwrap();
+        let name = body.name();
+        let email = body.email();
+        let password = body.password();
+        let password_confirmation = body.password_confirmation();
 
-        if body.name().is_empty() {
+        if name.is_empty() {
             return bad_request("missing param 'name'");
         }
 
-        if body.email().is_empty() {
+        if email.is_empty() {
             return bad_request("missing param 'email'");
         }
 
-        if body.password().is_empty() {
+        if password.is_empty() {
             return bad_request("missing param 'password'");
         }
 
-        if body.password_confirmation().is_empty() {
+        if password_confirmation.is_empty() {
             return bad_request("missing param 'password_confirmation'");
         }
 
-        if body.password() != body.password_confirmation() {
+        if password != password_confirmation {
             return bad_request("invalid param 'password_confirmation'");
         }
 
-        match self.email_validator.is_valid(body.email()) {
+        match self.email_validator.is_valid(email) {
             Ok(is_valid) => {
                 if !is_valid {
                     return bad_request("invalid param 'email'");
@@ -66,7 +83,16 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
             Err(_) => return server_error(),
         }
 
-        HttpResponse::new(200, SignUpResBody::Account(0))
+        let account = self
+            .add_account
+            .add(AddAccountDto {
+                name: name.to_string(),
+                email: email.to_string(),
+                password: password.to_string(),
+            })
+            .await;
+
+        HttpResponse::new(200, SignUpResBody::Account(account))
     }
 }
 
@@ -176,6 +202,6 @@ impl SignUpReqBodyBuilder {
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum SignUpResBody {
-    Account(u32),
+    Account(AccountEntity),
     Err(ErrorMsg),
 }
