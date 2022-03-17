@@ -34,6 +34,10 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
             return bad_request("missing param 'name'");
         }
 
+        if body.email().is_empty() {
+            return bad_request("missing param 'email'");
+        }
+
         HttpResponse::new(200, SignUpResBody::Account(0))
     }
 }
