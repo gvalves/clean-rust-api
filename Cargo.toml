@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.17.0", features = ["full", "macros"] }
-async-trait = '0.1.52'
+async-trait = "0.1.52"
+validator = "0.14.0"

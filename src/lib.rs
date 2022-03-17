@@ -2,6 +2,7 @@ use std::{error, fmt::Display, ops::Deref};
 
 pub mod domain;
 pub mod presentation;
+pub mod utils;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct ErrorMsg {
