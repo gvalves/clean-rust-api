@@ -53,7 +53,7 @@ fn make_add_account() -> Box<dyn AddAccount> {
             password,
         } = account_dto;
 
-        Ok(AccountEntity::new("any_id", &name, &email, &password))
+        Ok(AccountEntity::new("valid_id", &name, &email, &password))
     })
 }
 
@@ -303,4 +303,30 @@ pub async fn returns_500_if_add_account_returns_err() {
         res.body(),
         &SignUpResBody::Err(ErrorMsg::new("internal server error"))
     );
+}
+
+#[tokio::test]
+pub async fn returns_200_if_valid_data_is_provided() {
+    let sut = make_sut();
+
+    let body = SignUpReqBodyBuilder::new()
+        .set_name("valid_name")
+        .set_email("valid_email@mail.com")
+        .set_password("valid_password")
+        .set_password_confirmation("valid_password")
+        .build();
+
+    let req = HttpRequest::new(Some(body));
+    let res = sut.handle(req).await;
+
+    assert_eq!(res.status_code(), 200);
+
+    if let SignUpResBody::Account(account) = res.body() {
+        assert_eq!(account.id(), "valid_id");
+        assert_eq!(account.name(), "valid_name");
+        assert_eq!(account.email(), "valid_email@mail.com");
+        assert_eq!(account.password(), "valid_password");
+    } else {
+        assert!(false)
+    }
 }
