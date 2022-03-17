@@ -1,11 +1,10 @@
 use tokio;
 
-use crate::{
-    presentation::{http::HttpRequest, protocols::controller::ControllerProtocol},
-    ErrorMsg,
-};
+use crate::presentation::http::HttpRequest;
+use crate::presentation::protocols::controller::ControllerProtocol;
+use crate::ErrorMsg;
 
-use super::{SignUpBodyRes, SignUpController};
+use super::{SignUpController, SignUpReqBodyBuilder, SignUpResBody};
 
 #[tokio::test]
 pub async fn returns_400_if_req_body_is_none() {
@@ -16,6 +15,24 @@ pub async fn returns_400_if_req_body_is_none() {
     assert_eq!(res.status_code(), 400);
     assert_eq!(
         res.body(),
-        &SignUpBodyRes::Err(ErrorMsg::new("missing body"))
+        &SignUpResBody::Err(ErrorMsg::new("missing body"))
+    );
+}
+
+#[tokio::test]
+pub async fn returns_400_if_no_name_is_provided() {
+    let sut = SignUpController::new();
+    let body = SignUpReqBodyBuilder::new()
+        .set_email("any_email@mail.com")
+        .set_password("any_password")
+        .set_password_confirmation("any_password")
+        .build();
+    let req = HttpRequest::new(Some(body));
+    let res = sut.handle(req).await;
+
+    assert_eq!(res.status_code(), 400);
+    assert_eq!(
+        res.body(),
+        &SignUpResBody::Err(ErrorMsg::new("missing param 'name'"))
     );
 }
