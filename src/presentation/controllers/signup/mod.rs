@@ -57,16 +57,29 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
             return bad_request("invalid param 'password_confirmation'");
         }
 
-        if !self.email_validator.is_valid(body.email()) {
-            return bad_request("invalid param 'email'");
+        match self.email_validator.is_valid(body.email()) {
+            Ok(is_valid) => {
+                if !is_valid {
+                    return bad_request("invalid param 'email'");
+                }
+            }
+            Err(_) => return server_error(),
         }
 
         HttpResponse::new(200, SignUpResBody::Account(0))
     }
 }
 
+fn http_error(status_code: u32, msg: &str) -> HttpResponse<SignUpResBody> {
+    HttpResponse::new(status_code, SignUpResBody::Err(ErrorMsg::new(msg)))
+}
+
 fn bad_request(msg: &str) -> HttpResponse<SignUpResBody> {
-    HttpResponse::new(400, SignUpResBody::Err(ErrorMsg::new(msg)))
+    http_error(400, msg)
+}
+
+fn server_error() -> HttpResponse<SignUpResBody> {
+    http_error(500, "internal server error")
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]

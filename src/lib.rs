@@ -29,3 +29,11 @@ impl Display for ErrorMsg {
 }
 
 impl error::Error for ErrorMsg {}
+
+impl Default for ErrorMsg {
+    fn default() -> Self {
+        Self {
+            msg: Default::default(),
+        }
+    }
+}
