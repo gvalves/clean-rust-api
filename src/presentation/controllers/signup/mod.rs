@@ -25,20 +25,21 @@ impl ControllerProtocol<SignUpReqBody, SignUpResBody> for SignUpController {
         let body = req.body();
 
         if body.is_none() {
-            return HttpResponse::new(400, SignUpResBody::Err(ErrorMsg::new("missing body")));
+            return bad_request("missing body");
         }
 
         let body = body.unwrap();
 
         if body.name().is_empty() {
-            return HttpResponse::new(
-                400,
-                SignUpResBody::Err(ErrorMsg::new("missing param 'name'")),
-            );
+            return bad_request("missing param 'name'");
         }
 
         HttpResponse::new(200, SignUpResBody::Account(0))
     }
+}
+
+fn bad_request(msg: &str) -> HttpResponse<SignUpResBody> {
+    HttpResponse::new(400, SignUpResBody::Err(ErrorMsg::new(msg)))
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
