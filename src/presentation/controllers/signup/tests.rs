@@ -163,3 +163,22 @@ pub async fn returns_400_if_invalid_email_is_provided() {
         &SignUpResBody::Err(ErrorMsg::new("invalid param 'email'"))
     );
 }
+
+#[tokio::test]
+pub async fn calls_email_validator_with_correct_email() {
+    let mut sut = make_sut();
+    sut.set_email_validator(make_email_validator_strategy(|email| {
+        assert_eq!(email, "any_email@mail.com");
+        false
+    }));
+
+    let body = SignUpReqBodyBuilder::new()
+        .set_name("any_name")
+        .set_email("any_email@mail.com")
+        .set_password("any_password")
+        .set_password_confirmation("any_password")
+        .build();
+
+    let req = HttpRequest::new(Some(body));
+    sut.handle(req).await;
+}
