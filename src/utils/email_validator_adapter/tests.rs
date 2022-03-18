@@ -2,14 +2,20 @@ use std::error;
 
 use crate::presentation::protocols::email_validator::EmailValidator;
 
+use super::EmailValidatorAdapter;
+
 struct EmailValidatorAdapterMock {
     strategy: Box<dyn EmailValidator>,
+    sut: EmailValidatorAdapter,
 }
 
 impl EmailValidatorAdapterMock {
     fn new() -> Self {
         let strategy = Self::make_strategy(|_| Ok(true));
-        Self { strategy }
+        Self {
+            strategy,
+            sut: EmailValidatorAdapter,
+        }
     }
 
     fn make_strategy<T>(callback: T) -> Box<dyn EmailValidator>
@@ -44,7 +50,9 @@ impl EmailValidatorAdapterMock {
 
 impl EmailValidator for EmailValidatorAdapterMock {
     fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
-        self.strategy.is_valid(email)
+        let res = self.strategy.is_valid(email);
+        self.sut.is_valid(email).unwrap_or_default();
+        res
     }
 }
 
