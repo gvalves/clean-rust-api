@@ -1,3 +1,5 @@
+use std::error;
+
 use crate::presentation::protocols::email_validator::EmailValidator;
 
 struct EmailValidatorAdapterMock {
@@ -18,7 +20,7 @@ impl EmailValidatorAdapterMock {
 }
 
 impl EmailValidator for EmailValidatorAdapterMock {
-    fn is_valid(&self, email: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
         self.strategy.is_valid(email)
     }
 }
@@ -26,7 +28,7 @@ impl EmailValidator for EmailValidatorAdapterMock {
 struct EmailValidatorAlwaysTrueStrategy;
 
 impl EmailValidator for EmailValidatorAlwaysTrueStrategy {
-    fn is_valid(&self, _: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    fn is_valid(&self, _: &str) -> Result<bool, Box<dyn error::Error>> {
         Ok(true)
     }
 }
@@ -34,7 +36,7 @@ impl EmailValidator for EmailValidatorAlwaysTrueStrategy {
 struct EmailValidatorAlwaysFalseStrategy;
 
 impl EmailValidator for EmailValidatorAlwaysFalseStrategy {
-    fn is_valid(&self, _: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    fn is_valid(&self, _: &str) -> Result<bool, Box<dyn error::Error>> {
         Ok(false)
     }
 }
@@ -57,4 +59,20 @@ fn returns_true_if_validator_returns_true() {
     let sut = make_sut();
     let is_valid = sut.is_valid("valid_email@mail.com").unwrap();
     assert!(is_valid);
+}
+
+#[test]
+fn calls_validator_with_correct_email() {
+    struct EmailValidatorAssertEmailStrategy;
+
+    impl EmailValidator for EmailValidatorAssertEmailStrategy {
+        fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
+            assert_eq!(email, "any_email@mail.com");
+            Ok(true)
+        }
+    }
+
+    let mut sut = make_sut();
+    sut.set_strategy(Box::new(EmailValidatorAssertEmailStrategy));
+    sut.is_valid("any_email@mail.com").unwrap();
 }
