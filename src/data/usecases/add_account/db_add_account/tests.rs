@@ -2,8 +2,11 @@ use async_trait::async_trait;
 use tokio;
 
 use crate::{
-    data::protocols::encrypter::Encrypter,
-    domain::usecases::add_account::{AddAccount, AddAccountDto},
+    data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter},
+    domain::{
+        entities::account::AccountEntity,
+        usecases::add_account::{AddAccount, AddAccountDto},
+    },
     ErrorMsg, TError,
 };
 
@@ -11,7 +14,18 @@ use super::DbAddAccount;
 
 fn make_sut() -> DbAddAccount {
     let encrypter = make_encrypter(|_| Ok(String::from("hashed_password")));
-    let sut = DbAddAccount::new(encrypter);
+
+    let add_account_repository = make_add_account_repository(|account_dto| {
+        let AddAccountDto {
+            name,
+            email,
+            password,
+        } = account_dto;
+
+        Ok(AccountEntity::new("valid_id", &name, &email, &password))
+    });
+
+    let sut = DbAddAccount::new(encrypter, add_account_repository);
     sut
 }
 
@@ -38,6 +52,31 @@ where
     }
 
     Box::new(EncrypterStub { callback })
+}
+
+fn make_add_account_repository<T>(callback: T) -> Box<dyn AddAccountRepository>
+where
+    T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync + 'static,
+{
+    struct AddAccountRepositoryStub<T>
+    where
+        T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
+    {
+        callback: T,
+    }
+
+    #[async_trait]
+    impl<T> AddAccountRepository for AddAccountRepositoryStub<T>
+    where
+        T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
+    {
+        async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
+            let callback = &self.callback;
+            callback(account_dto)
+        }
+    }
+
+    Box::new(AddAccountRepositoryStub { callback })
 }
 
 #[tokio::test]
@@ -74,4 +113,33 @@ async fn returns_err_if_encryter_returns_err() {
     let result = sut.add(account_dto).await;
 
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn calls_add_account_repository_with_correct_data() {
+    let mut sut = make_sut();
+    sut.set_add_account_repository(make_add_account_repository(|account_dto| {
+        let AddAccountDto {
+            name,
+            email,
+            password,
+        } = account_dto;
+
+        assert_eq!(name, "valid_name");
+        assert_eq!(email, "valid_email@mail.com");
+        assert_eq!(password, "valid_password");
+
+        Ok(AccountEntity::new("valid_id", &name, &email, &password))
+    }));
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    match sut.add(account_dto).await {
+        Ok(_) => {}
+        Err(_) => {}
+    };
 }
