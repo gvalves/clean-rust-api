@@ -30,7 +30,7 @@ impl DbAddAccount {
 #[async_trait]
 impl AddAccount for DbAddAccount {
     async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
-        self.encrypter.encrypt(&account_dto.email).await.unwrap();
+        self.encrypter.encrypt(&account_dto.email).await?;
 
         Err(Box::new(ErrorMsg::new("unimplemented")))
     }
