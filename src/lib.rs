@@ -1,5 +1,6 @@
 use std::{error, fmt::Display, ops::Deref};
 
+pub mod data;
 pub mod domain;
 pub mod presentation;
 pub mod utils;
