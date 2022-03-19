@@ -40,3 +40,5 @@ impl Default for ErrorMsg {
         }
     }
 }
+
+pub type TError<T> = Result<T, Box<dyn error::Error>>;

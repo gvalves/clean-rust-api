@@ -1,5 +1,3 @@
-use std::error;
-
 use async_trait::async_trait;
 
 use crate::{
@@ -8,7 +6,7 @@ use crate::{
         entities::account::AccountEntity,
         usecases::add_account::{AddAccount, AddAccountDto},
     },
-    ErrorMsg,
+    ErrorMsg, TError,
 };
 
 #[cfg(test)]
@@ -31,11 +29,8 @@ impl DbAddAccount {
 
 #[async_trait]
 impl AddAccount for DbAddAccount {
-    async fn add(
-        &self,
-        account_dto: AddAccountDto,
-    ) -> Result<AccountEntity, Box<dyn error::Error>> {
-        self.encrypter.encrypt(&account_dto.email);
+    async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
+        self.encrypter.encrypt(&account_dto.email).await.unwrap();
 
         Err(Box::new(ErrorMsg::new("unimplemented")))
     }

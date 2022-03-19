@@ -1,11 +1,10 @@
-use std::error;
-
 use async_trait::async_trait;
 use tokio;
 
 use crate::{
     data::protocols::encrypter::Encrypter,
     domain::usecases::add_account::{AddAccount, AddAccountDto},
+    TError,
 };
 
 use super::DbAddAccount;
@@ -18,11 +17,11 @@ fn make_sut() -> DbAddAccount {
 
 fn make_encrypter<T>(callback: T) -> Box<dyn Encrypter>
 where
-    T: Fn(&str) -> Result<String, Box<dyn error::Error>> + Send + Sync + 'static,
+    T: Fn(&str) -> TError<String> + Send + Sync + 'static,
 {
     struct EncrypterStub<T>
     where
-        T: Fn(&str) -> Result<String, Box<dyn error::Error>> + Send + Sync,
+        T: Fn(&str) -> TError<String> + Send + Sync,
     {
         callback: T,
     }
@@ -30,9 +29,9 @@ where
     #[async_trait]
     impl<T> Encrypter for EncrypterStub<T>
     where
-        T: Fn(&str) -> Result<String, Box<dyn error::Error>> + Send + Sync,
+        T: Fn(&str) -> TError<String> + Send + Sync,
     {
-        async fn encrypt(&self, value: &str) -> Result<String, Box<dyn error::Error>> {
+        async fn encrypt(&self, value: &str) -> TError<String> {
             let callback = &self.callback;
             callback(value)
         }

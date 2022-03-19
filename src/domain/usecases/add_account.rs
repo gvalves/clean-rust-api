@@ -1,13 +1,10 @@
-use std::error;
-
 use async_trait::async_trait;
 
-use crate::domain::entities::account::AccountEntity;
+use crate::{domain::entities::account::AccountEntity, TError};
 
 #[async_trait]
 pub trait AddAccount: Send + Sync {
-    async fn add(&self, account_dto: AddAccountDto)
-        -> Result<AccountEntity, Box<dyn error::Error>>;
+    async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity>;
 }
 
 pub struct AddAccountDto {

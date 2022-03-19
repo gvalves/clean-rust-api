@@ -1,6 +1,4 @@
-use std::error;
-
-use crate::presentation::protocols::email_validator::EmailValidator;
+use crate::{presentation::protocols::email_validator::EmailValidator, TError};
 
 use super::EmailValidatorAdapter;
 
@@ -20,20 +18,20 @@ impl EmailValidatorAdapterMock {
 
     fn make_strategy<T>(callback: T) -> Box<dyn EmailValidator>
     where
-        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync + 'static,
+        T: Fn(&str) -> TError<bool> + Send + Sync + 'static,
     {
         struct EmailValidatorAdapterMockStrategy<T>
         where
-            T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync,
+            T: Fn(&str) -> TError<bool> + Send + Sync,
         {
             callback: T,
         }
 
         impl<T> EmailValidator for EmailValidatorAdapterMockStrategy<T>
         where
-            T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync,
+            T: Fn(&str) -> TError<bool> + Send + Sync,
         {
-            fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
+            fn is_valid(&self, email: &str) -> TError<bool> {
                 let callback = &self.callback;
                 callback(email)
             }
@@ -49,7 +47,7 @@ impl EmailValidatorAdapterMock {
 }
 
 impl EmailValidator for EmailValidatorAdapterMock {
-    fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
+    fn is_valid(&self, email: &str) -> TError<bool> {
         let res = self.strategy.is_valid(email);
         self.sut.is_valid(email).unwrap_or_default();
         res

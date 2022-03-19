@@ -1,5 +1,3 @@
-use std::error;
-
 use async_trait::async_trait;
 use tokio;
 
@@ -7,7 +5,7 @@ use crate::domain::entities::account::AccountEntity;
 use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
 use crate::presentation::protocols::controller::ControllerProtocol;
 use crate::presentation::{http::HttpRequest, protocols::email_validator::EmailValidator};
-use crate::ErrorMsg;
+use crate::{ErrorMsg, TError};
 
 use super::{SignUpController, SignUpReqBodyBuilder, SignUpResBody};
 
@@ -23,20 +21,20 @@ fn make_email_validator() -> Box<dyn EmailValidator> {
 
 fn make_email_validator_strategy<T>(strategy: T) -> Box<dyn EmailValidator>
 where
-    T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync + 'static,
+    T: Fn(&str) -> TError<bool> + Send + Sync + 'static,
 {
     struct EmailValidatorStub<T>
     where
-        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync,
+        T: Fn(&str) -> TError<bool> + Send + Sync,
     {
         strategy: T,
     }
 
     impl<T> EmailValidator for EmailValidatorStub<T>
     where
-        T: Fn(&str) -> Result<bool, Box<dyn error::Error>> + Send + Sync,
+        T: Fn(&str) -> TError<bool> + Send + Sync,
     {
-        fn is_valid(&self, email: &str) -> Result<bool, Box<dyn error::Error>> {
+        fn is_valid(&self, email: &str) -> TError<bool> {
             let strategy = &self.strategy;
             strategy(email)
         }
@@ -59,11 +57,11 @@ fn make_add_account() -> Box<dyn AddAccount> {
 
 fn make_add_account_strategy<T>(strategy: T) -> Box<dyn AddAccount>
 where
-    T: Fn(AddAccountDto) -> Result<AccountEntity, Box<dyn error::Error>> + Send + Sync + 'static,
+    T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync + 'static,
 {
     struct AddAccountStub<T>
     where
-        T: Fn(AddAccountDto) -> Result<AccountEntity, Box<dyn error::Error>> + Send + Sync,
+        T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
     {
         strategy: T,
     }
@@ -71,12 +69,9 @@ where
     #[async_trait]
     impl<T> AddAccount for AddAccountStub<T>
     where
-        T: Fn(AddAccountDto) -> Result<AccountEntity, Box<dyn error::Error>> + Send + Sync,
+        T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
     {
-        async fn add(
-            &self,
-            account_dto: AddAccountDto,
-        ) -> Result<AccountEntity, Box<dyn error::Error>> {
+        async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
             let strategy = &self.strategy;
             strategy(account_dto)
         }
