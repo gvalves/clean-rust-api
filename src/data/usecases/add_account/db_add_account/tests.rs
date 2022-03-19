@@ -4,7 +4,7 @@ use tokio;
 use crate::{
     data::protocols::encrypter::Encrypter,
     domain::usecases::add_account::{AddAccount, AddAccountDto},
-    TError,
+    ErrorMsg, TError,
 };
 
 use super::DbAddAccount;
@@ -58,4 +58,20 @@ async fn calls_encrypter_with_correct_password() {
         Ok(_) => {}
         Err(_) => {}
     };
+}
+
+#[tokio::test]
+async fn returns_err_if_encryter_returns_err() {
+    let mut sut = make_sut();
+    sut.set_encrypter(make_encrypter(|_| Err(Box::new(ErrorMsg::default()))));
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    let result = sut.add(account_dto).await;
+
+    assert!(result.is_err());
 }
