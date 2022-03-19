@@ -10,41 +10,8 @@ use crate::{ErrorMsg, TError};
 use super::{SignUpController, SignUpReqBodyBuilder, SignUpResBody};
 
 fn make_sut() -> SignUpController {
-    let email_validator = make_email_validator();
-    let add_account = make_add_account();
-    SignUpController::new(email_validator, add_account)
-}
-
-fn make_email_validator() -> Box<dyn EmailValidator> {
-    make_email_validator_strategy(|_| Ok(true))
-}
-
-fn make_email_validator_strategy<T>(strategy: T) -> Box<dyn EmailValidator>
-where
-    T: Fn(&str) -> TError<bool> + Send + Sync + 'static,
-{
-    struct EmailValidatorStub<T>
-    where
-        T: Fn(&str) -> TError<bool> + Send + Sync,
-    {
-        strategy: T,
-    }
-
-    impl<T> EmailValidator for EmailValidatorStub<T>
-    where
-        T: Fn(&str) -> TError<bool> + Send + Sync,
-    {
-        fn is_valid(&self, email: &str) -> TError<bool> {
-            let strategy = &self.strategy;
-            strategy(email)
-        }
-    }
-
-    Box::new(EmailValidatorStub { strategy })
-}
-
-fn make_add_account() -> Box<dyn AddAccount> {
-    make_add_account_strategy(|account_dto| {
+    let email_validator = make_email_validator(|_| Ok(true));
+    let add_account = make_add_account(|account_dto| {
         let AddAccountDto {
             name,
             email,
@@ -52,10 +19,35 @@ fn make_add_account() -> Box<dyn AddAccount> {
         } = account_dto;
 
         Ok(AccountEntity::new("valid_id", &name, &email, &password))
-    })
+    });
+    SignUpController::new(email_validator, add_account)
 }
 
-fn make_add_account_strategy<T>(strategy: T) -> Box<dyn AddAccount>
+fn make_email_validator<T>(callback: T) -> Box<dyn EmailValidator>
+where
+    T: Fn(&str) -> TError<bool> + Send + Sync + 'static,
+{
+    struct EmailValidatorStub<T>
+    where
+        T: Fn(&str) -> TError<bool> + Send + Sync,
+    {
+        callback: T,
+    }
+
+    impl<T> EmailValidator for EmailValidatorStub<T>
+    where
+        T: Fn(&str) -> TError<bool> + Send + Sync,
+    {
+        fn is_valid(&self, email: &str) -> TError<bool> {
+            let callback = &self.callback;
+            callback(email)
+        }
+    }
+
+    Box::new(EmailValidatorStub { callback })
+}
+
+fn make_add_account<T>(callback: T) -> Box<dyn AddAccount>
 where
     T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync + 'static,
 {
@@ -63,7 +55,7 @@ where
     where
         T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
     {
-        strategy: T,
+        callback: T,
     }
 
     #[async_trait]
@@ -72,12 +64,12 @@ where
         T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
     {
         async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
-            let strategy = &self.strategy;
-            strategy(account_dto)
+            let callback = &self.callback;
+            callback(account_dto)
         }
     }
 
-    Box::new(AddAccountStub { strategy })
+    Box::new(AddAccountStub { callback })
 }
 
 #[tokio::test]
@@ -96,11 +88,13 @@ pub async fn returns_400_if_req_body_is_none() {
 #[tokio::test]
 pub async fn returns_400_if_no_name_is_provided() {
     let sut = make_sut();
+
     let body = SignUpReqBodyBuilder::new()
         .set_email("any_email@mail.com")
         .set_password("any_password")
         .set_password_confirmation("any_password")
         .build();
+
     let req = HttpRequest::new(Some(body));
     let res = sut.handle(req).await;
 
@@ -114,11 +108,13 @@ pub async fn returns_400_if_no_name_is_provided() {
 #[tokio::test]
 pub async fn returns_400_if_no_email_is_provided() {
     let sut = make_sut();
+
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
         .set_password("any_password")
         .set_password_confirmation("any_password")
         .build();
+
     let req = HttpRequest::new(Some(body));
     let res = sut.handle(req).await;
 
@@ -132,11 +128,13 @@ pub async fn returns_400_if_no_email_is_provided() {
 #[tokio::test]
 pub async fn returns_400_if_no_password_is_provided() {
     let sut = make_sut();
+
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
         .set_email("any_email@mail.com")
         .set_password_confirmation("any_password")
         .build();
+
     let req = HttpRequest::new(Some(body));
     let res = sut.handle(req).await;
 
@@ -149,11 +147,13 @@ pub async fn returns_400_if_no_password_is_provided() {
 #[tokio::test]
 pub async fn returns_400_if_no_password_confirmation_is_provided() {
     let sut = make_sut();
+
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
         .set_email("any_email@mail.com")
         .set_password("any_password")
         .build();
+
     let req = HttpRequest::new(Some(body));
     let res = sut.handle(req).await;
 
@@ -167,12 +167,14 @@ pub async fn returns_400_if_no_password_confirmation_is_provided() {
 #[tokio::test]
 pub async fn returns_400_if_password_confirmation_fails() {
     let sut = make_sut();
+
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
         .set_email("any_email@mail.com")
         .set_password("any_password")
         .set_password_confirmation("invalid_password")
         .build();
+
     let req = HttpRequest::new(Some(body));
     let res = sut.handle(req).await;
 
@@ -186,7 +188,7 @@ pub async fn returns_400_if_password_confirmation_fails() {
 #[tokio::test]
 pub async fn returns_400_if_invalid_email_is_provided() {
     let mut sut = make_sut();
-    sut.set_email_validator(make_email_validator_strategy(|_| Ok(false)));
+    sut.set_email_validator(make_email_validator(|_| Ok(false)));
 
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
@@ -208,7 +210,7 @@ pub async fn returns_400_if_invalid_email_is_provided() {
 #[tokio::test]
 pub async fn calls_email_validator_with_correct_email() {
     let mut sut = make_sut();
-    sut.set_email_validator(make_email_validator_strategy(|email| {
+    sut.set_email_validator(make_email_validator(|email| {
         assert_eq!(email, "any_email@mail.com");
         Ok(false)
     }));
@@ -227,9 +229,7 @@ pub async fn calls_email_validator_with_correct_email() {
 #[tokio::test]
 pub async fn returns_500_if_email_validator_returns_err() {
     let mut sut = make_sut();
-    sut.set_email_validator(make_email_validator_strategy(|_| {
-        Err(Box::new(ErrorMsg::default()))
-    }));
+    sut.set_email_validator(make_email_validator(|_| Err(Box::new(ErrorMsg::default()))));
 
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
@@ -251,7 +251,7 @@ pub async fn returns_500_if_email_validator_returns_err() {
 #[tokio::test]
 pub async fn calls_add_account_with_correct_values() {
     let mut sut = make_sut();
-    sut.set_add_account(make_add_account_strategy(|account_dto| {
+    sut.set_add_account(make_add_account(|account_dto| {
         let AddAccountDto {
             name,
             email,
@@ -279,9 +279,7 @@ pub async fn calls_add_account_with_correct_values() {
 #[tokio::test]
 pub async fn returns_500_if_add_account_returns_err() {
     let mut sut = make_sut();
-    sut.set_add_account(make_add_account_strategy(|_| {
-        Err(Box::new(ErrorMsg::default()))
-    }));
+    sut.set_add_account(make_add_account(|_| Err(Box::new(ErrorMsg::default()))));
 
     let body = SignUpReqBodyBuilder::new()
         .set_name("any_name")
