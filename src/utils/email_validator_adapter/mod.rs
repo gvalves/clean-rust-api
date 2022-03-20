@@ -1,6 +1,7 @@
 use validator::Validate;
 
-use crate::{presentation::protocols::email_validator::EmailValidator, TError};
+use crate::presentation::protocols::email_validator::EmailValidator;
+use crate::TError;
 
 #[cfg(test)]
 pub mod tests;

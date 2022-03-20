@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 
-use crate::{
-    domain::{entities::account::AccountEntity, usecases::add_account::AddAccountDto},
-    TError,
-};
+use crate::domain::{entities::account::AccountEntity, usecases::add_account::AddAccountDto};
+use crate::TError;
 
 #[async_trait]
 pub trait AddAccountRepository: Send + Sync {

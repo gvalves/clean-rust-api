@@ -1,4 +1,5 @@
-use crate::{presentation::protocols::email_validator::EmailValidator, TError};
+use crate::presentation::protocols::email_validator::EmailValidator;
+use crate::TError;
 
 use super::EmailValidatorAdapter;
 

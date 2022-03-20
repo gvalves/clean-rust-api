@@ -1,16 +1,12 @@
 use async_trait::async_trait;
 
-use crate::{
-    domain::{
-        entities::account::AccountEntity,
-        usecases::add_account::{AddAccount, AddAccountDto},
-    },
-    presentation::{
-        http::{HttpRequest, HttpResponse},
-        protocols::{controller::ControllerProtocol, email_validator::EmailValidator},
-    },
-    ErrorMsg,
+use crate::domain::entities::account::AccountEntity;
+use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
+use crate::presentation::http::{HttpRequest, HttpResponse};
+use crate::presentation::protocols::{
+    controller::ControllerProtocol, email_validator::EmailValidator,
 };
+use crate::ErrorMsg;
 
 #[cfg(test)]
 pub mod tests;
