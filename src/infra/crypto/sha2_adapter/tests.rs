@@ -9,7 +9,7 @@ use super::Sha2Adapter;
 
 macro_rules! encrypter_encrypt_default {
     () => {
-        |_| Ok(String::from("any_hash"))
+        |_| Ok(String::from("hashed_value"))
     };
 }
 
@@ -79,4 +79,12 @@ async fn returns_err_if_encrypter_returns_err() {
         result.unwrap_err().to_string(),
         ErrorMsg::default().to_string()
     );
+}
+
+#[tokio::test]
+async fn returns_a_hash_on_success() {
+    let sut = make_sut();
+    let result = sut.encrypt("any_value").await;
+
+    assert_eq!(result.unwrap(), "hashed_value");
 }
