@@ -45,18 +45,15 @@ fn make_sut() -> SignUpController {
         .expect_add()
         .returning(add_account_add_default!());
 
-    let email_validator = Box::new(email_validator);
-    let add_account = Box::new(add_account);
-
     SignUpController::new(email_validator, add_account)
 }
 
-fn make_email_validator() -> EmailValidator {
-    EmailValidator::default()
+fn make_email_validator() -> Box<EmailValidator> {
+    Box::new(EmailValidator::default())
 }
 
-fn make_add_account() -> AddAccount {
-    AddAccount::default()
+fn make_add_account() -> Box<AddAccount> {
+    Box::new(AddAccount::default())
 }
 
 #[tokio::test]
@@ -177,7 +174,6 @@ async fn returns_400_if_invalid_email_is_provided() {
     let mut email_validator = make_email_validator();
     email_validator.expect_is_valid().returning(|_| Ok(false));
 
-    let email_validator = Box::new(email_validator);
     let mut sut = make_sut();
     sut.set_email_validator(email_validator);
 
@@ -206,7 +202,6 @@ async fn calls_email_validator_with_correct_email() {
         .with(predicate::eq("any_email@mail.com"))
         .returning(email_validator_is_valid_default!());
 
-    let email_validator = Box::new(email_validator);
     let mut sut = make_sut();
     sut.set_email_validator(email_validator);
 
@@ -228,7 +223,6 @@ async fn returns_500_if_email_validator_returns_err() {
         .expect_is_valid()
         .returning(|_| ErrorMsg::default().into());
 
-    let email_validator = Box::new(email_validator);
     let mut sut = make_sut();
     sut.set_email_validator(email_validator);
 
@@ -261,7 +255,6 @@ async fn calls_add_account_with_correct_values() {
         }))
         .returning(add_account_add_default!());
 
-    let add_account = Box::new(add_account);
     let mut sut = make_sut();
     sut.set_add_account(add_account);
 
@@ -288,7 +281,6 @@ async fn returns_500_if_add_account_returns_err() {
         }))
         .returning(|_| ErrorMsg::default().into());
 
-    let add_account = Box::new(add_account);
     let mut sut = make_sut();
     sut.set_add_account(add_account);
 
