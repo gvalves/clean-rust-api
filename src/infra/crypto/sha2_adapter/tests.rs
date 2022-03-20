@@ -1,3 +1,4 @@
+use mockall::predicate;
 use mockall_double::double;
 
 use crate::data::protocols::encrypter::Encrypter;
@@ -34,6 +35,23 @@ async fn calls_encrypter() {
     encrypter
         .expect_encrypt()
         .once()
+        .returning(encrypter_encrypt_default!());
+
+    let mut sut = make_sut();
+    sut.set_encrypter(encrypter);
+
+    match sut.encrypt("any_value").await {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+}
+
+#[tokio::test]
+async fn calls_encrypter_with_correct_data() {
+    let mut encrypter = make_encrypter();
+    encrypter
+        .expect_encrypt()
+        .with(predicate::eq("any_value"))
         .returning(encrypter_encrypt_default!());
 
     let mut sut = make_sut();
