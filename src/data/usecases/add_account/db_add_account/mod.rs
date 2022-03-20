@@ -46,7 +46,7 @@ impl DbAddAccount {
 impl AddAccount for DbAddAccount {
     async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
         self.encrypter.encrypt(&account_dto.email).await?;
-        self.add_account_repository.add(account_dto).await;
+        self.add_account_repository.add(account_dto).await?;
 
         Err(Box::new(ErrorMsg::new("unimplemented")))
     }
