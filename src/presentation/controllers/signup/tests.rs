@@ -60,7 +60,7 @@ fn make_add_account() -> AddAccount {
 }
 
 #[tokio::test]
-pub async fn returns_400_if_req_body_is_none() {
+async fn returns_400_if_req_body_is_none() {
     let sut = make_sut();
     let req = HttpRequest::new(None);
     let res = sut.handle(req).await;
@@ -73,7 +73,7 @@ pub async fn returns_400_if_req_body_is_none() {
 }
 
 #[tokio::test]
-pub async fn returns_400_if_no_name_is_provided() {
+async fn returns_400_if_no_name_is_provided() {
     let sut = make_sut();
 
     let body = SignUpReqBodyBuilder::new()
@@ -93,7 +93,7 @@ pub async fn returns_400_if_no_name_is_provided() {
 }
 
 #[tokio::test]
-pub async fn returns_400_if_no_email_is_provided() {
+async fn returns_400_if_no_email_is_provided() {
     let sut = make_sut();
 
     let body = SignUpReqBodyBuilder::new()
@@ -113,7 +113,7 @@ pub async fn returns_400_if_no_email_is_provided() {
 }
 
 #[tokio::test]
-pub async fn returns_400_if_no_password_is_provided() {
+async fn returns_400_if_no_password_is_provided() {
     let sut = make_sut();
 
     let body = SignUpReqBodyBuilder::new()
@@ -132,7 +132,7 @@ pub async fn returns_400_if_no_password_is_provided() {
     );
 }
 #[tokio::test]
-pub async fn returns_400_if_no_password_confirmation_is_provided() {
+async fn returns_400_if_no_password_confirmation_is_provided() {
     let sut = make_sut();
 
     let body = SignUpReqBodyBuilder::new()
@@ -152,7 +152,7 @@ pub async fn returns_400_if_no_password_confirmation_is_provided() {
 }
 
 #[tokio::test]
-pub async fn returns_400_if_password_confirmation_fails() {
+async fn returns_400_if_password_confirmation_fails() {
     let sut = make_sut();
 
     let body = SignUpReqBodyBuilder::new()
@@ -173,7 +173,7 @@ pub async fn returns_400_if_password_confirmation_fails() {
 }
 
 #[tokio::test]
-pub async fn returns_400_if_invalid_email_is_provided() {
+async fn returns_400_if_invalid_email_is_provided() {
     let mut email_validator = make_email_validator();
     email_validator.expect_is_valid().returning(|_| Ok(false));
 
@@ -199,7 +199,7 @@ pub async fn returns_400_if_invalid_email_is_provided() {
 }
 
 #[tokio::test]
-pub async fn calls_email_validator_with_correct_email() {
+async fn calls_email_validator_with_correct_email() {
     let mut email_validator = make_email_validator();
     email_validator
         .expect_is_valid()
@@ -222,7 +222,7 @@ pub async fn calls_email_validator_with_correct_email() {
 }
 
 #[tokio::test]
-pub async fn returns_500_if_email_validator_returns_err() {
+async fn returns_500_if_email_validator_returns_err() {
     let mut email_validator = make_email_validator();
     email_validator
         .expect_is_valid()
@@ -250,7 +250,7 @@ pub async fn returns_500_if_email_validator_returns_err() {
 }
 
 #[tokio::test]
-pub async fn calls_add_account_with_correct_values() {
+async fn calls_add_account_with_correct_values() {
     let mut add_account = make_add_account();
     add_account
         .expect_add()
@@ -277,7 +277,7 @@ pub async fn calls_add_account_with_correct_values() {
 }
 
 #[tokio::test]
-pub async fn returns_500_if_add_account_returns_err() {
+async fn returns_500_if_add_account_returns_err() {
     let mut add_account = make_add_account();
     add_account
         .expect_add()
@@ -310,7 +310,7 @@ pub async fn returns_500_if_add_account_returns_err() {
 }
 
 #[tokio::test]
-pub async fn returns_200_if_valid_data_is_provided() {
+async fn returns_200_if_valid_data_is_provided() {
     let sut = make_sut();
 
     let body = SignUpReqBodyBuilder::new()
