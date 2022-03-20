@@ -5,6 +5,8 @@ pub mod domain;
 pub mod presentation;
 pub mod utils;
 
+pub trait Error: error::Error + Send + Sync {}
+
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct ErrorMsg {
     msg: String,
@@ -33,6 +35,8 @@ impl Display for ErrorMsg {
 
 impl error::Error for ErrorMsg {}
 
+impl Error for ErrorMsg {}
+
 impl Default for ErrorMsg {
     fn default() -> Self {
         Self {
@@ -41,4 +45,4 @@ impl Default for ErrorMsg {
     }
 }
 
-pub type TError<T> = Result<T, Box<dyn error::Error>>;
+pub type TError<T> = Result<T, Box<dyn Error>>;
