@@ -45,4 +45,16 @@ impl Default for ErrorMsg {
     }
 }
 
+impl From<ErrorMsg> for Box<dyn Error> {
+    fn from(err: ErrorMsg) -> Self {
+        Box::new(err)
+    }
+}
+
+impl<T> From<ErrorMsg> for Result<T, Box<dyn Error>> {
+    fn from(err: ErrorMsg) -> Self {
+        Err(err.into())
+    }
+}
+
 pub type TError<T> = Result<T, Box<dyn Error>>;

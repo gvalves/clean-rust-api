@@ -41,7 +41,7 @@ impl DbAddAccount {
 #[async_trait]
 impl AddAccount for DbAddAccount {
     async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
-        let hashed_password = self.encrypter.encrypt(&account_dto.email).await?;
+        let hashed_password = self.encrypter.encrypt(&account_dto.password).await?;
 
         self.add_account_repository
             .add(AddAccountDto {
