@@ -1,13 +1,9 @@
 use async_trait::async_trait;
 
-use crate::{
-    data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter},
-    domain::{
-        entities::account::AccountEntity,
-        usecases::add_account::{AddAccount, AddAccountDto},
-    },
-    ErrorMsg, TError,
-};
+use crate::data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter};
+use crate::domain::entities::account::AccountEntity;
+use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
+use crate::TError;
 
 #[cfg(test)]
 pub mod tests;
@@ -45,9 +41,13 @@ impl DbAddAccount {
 #[async_trait]
 impl AddAccount for DbAddAccount {
     async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
-        self.encrypter.encrypt(&account_dto.email).await?;
-        self.add_account_repository.add(account_dto).await?;
+        let hashed_password = self.encrypter.encrypt(&account_dto.email).await?;
 
-        Err(Box::new(ErrorMsg::new("unimplemented")))
+        self.add_account_repository
+            .add(AddAccountDto {
+                password: hashed_password,
+                ..account_dto
+            })
+            .await
     }
 }
