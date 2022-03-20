@@ -226,7 +226,7 @@ pub async fn returns_500_if_email_validator_returns_err() {
     let mut email_validator = make_email_validator();
     email_validator
         .expect_is_valid()
-        .returning(|_| Err(Box::new(ErrorMsg::default())));
+        .returning(|_| ErrorMsg::default().into());
 
     let email_validator = Box::new(email_validator);
     let mut sut = make_sut();
@@ -286,7 +286,7 @@ pub async fn returns_500_if_add_account_returns_err() {
             email: String::from("any_email@mail.com"),
             password: String::from("any_password"),
         }))
-        .returning(|_| Err(Box::new(ErrorMsg::default())));
+        .returning(|_| ErrorMsg::default().into());
 
     let add_account = Box::new(add_account);
     let mut sut = make_sut();
