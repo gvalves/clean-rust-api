@@ -81,8 +81,11 @@ where
 
 #[tokio::test]
 async fn calls_encrypter_with_correct_password() {
+    static mut CALLED: bool = false;
+
     let mut sut = make_sut();
     sut.set_encrypter(make_encrypter(|email| {
+        unsafe { CALLED = true }
         assert_eq!(email, "valid_email@mail.com");
         Ok(String::new())
     }));
@@ -97,6 +100,8 @@ async fn calls_encrypter_with_correct_password() {
         Ok(_) => {}
         Err(_) => {}
     };
+
+    assert!(unsafe { CALLED });
 }
 
 #[tokio::test]
@@ -117,8 +122,12 @@ async fn returns_err_if_encryter_returns_err() {
 
 #[tokio::test]
 async fn calls_add_account_repository_with_correct_data() {
+    static mut CALLED: bool = false;
+
     let mut sut = make_sut();
     sut.set_add_account_repository(make_add_account_repository(|account_dto| {
+        unsafe { CALLED = true }
+
         let AddAccountDto {
             name,
             email,
@@ -142,4 +151,6 @@ async fn calls_add_account_repository_with_correct_data() {
         Ok(_) => {}
         Err(_) => {}
     };
+
+    assert!(unsafe { CALLED })
 }
