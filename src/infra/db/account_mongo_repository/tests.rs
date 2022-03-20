@@ -63,3 +63,25 @@ async fn calls_repository_implementation_with_correct_data() {
         Err(_) => {}
     }
 }
+
+#[tokio::test]
+async fn returns_an_account_on_success() {
+    let sut = make_sut();
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    let result = sut.add(account_dto).await;
+
+    if let Ok(account) = result {
+        assert_eq!(account.id(), "valid_id");
+        assert_eq!(account.name(), "valid_name");
+        assert_eq!(account.email(), "valid_email@mail.com");
+        assert_eq!(account.password(), "valid_password");
+    } else {
+        assert!(false);
+    }
+}
