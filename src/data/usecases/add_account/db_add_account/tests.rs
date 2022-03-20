@@ -115,9 +115,11 @@ async fn returns_err_if_encryter_returns_err() {
         password: String::from("valid_password"),
     };
 
-    let result = sut.add(account_dto).await;
-
-    assert!(result.is_err());
+    if let Some(err) = sut.add(account_dto).await.err() {
+        assert_eq!(err.to_string(), ErrorMsg::default().to_string())
+    } else {
+        assert!(false);
+    }
 }
 
 #[tokio::test]
