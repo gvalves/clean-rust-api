@@ -1,6 +1,7 @@
 use mockall::predicate;
 
 use crate::domain::usecases::add_account::AddAccountDto;
+use crate::ErrorMsg;
 use crate::{
     data::protocols::add_account_repository::AddAccountRepository,
     domain::entities::account::AccountEntity,
@@ -62,6 +63,30 @@ async fn calls_repository_implementation_with_correct_data() {
         Ok(_) => {}
         Err(_) => {}
     }
+}
+
+#[tokio::test]
+async fn returns_err_if_repository_implementation_returns_err() {
+    let mut repository = make_repository();
+    repository
+        .expect_add()
+        .returning(|_| ErrorMsg::default().into());
+
+    let mut sut = make_sut();
+    sut.set_repository(repository);
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    let result = sut.add(account_dto).await;
+
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        ErrorMsg::default().to_string()
+    );
 }
 
 #[tokio::test]
