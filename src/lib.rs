@@ -2,6 +2,7 @@ use std::{error, fmt::Display, ops::Deref};
 
 pub mod data;
 pub mod domain;
+pub mod infra;
 pub mod presentation;
 pub mod utils;
 
