@@ -1,9 +1,9 @@
 use mockall::predicate;
 use mockall_double::double;
 
-use crate::data::protocols::encrypter::Encrypter;
 #[double]
 use crate::data::protocols::encrypter::Encrypter as MockEncrypter;
+use crate::{data::protocols::encrypter::Encrypter, ErrorMsg};
 
 use super::Sha2Adapter;
 
@@ -61,4 +61,22 @@ async fn calls_encrypter_with_correct_data() {
         Ok(_) => {}
         Err(_) => {}
     }
+}
+
+#[tokio::test]
+async fn returns_err_if_encrypter_returns_err() {
+    let mut encrypter = make_encrypter();
+    encrypter
+        .expect_encrypt()
+        .returning(|_| ErrorMsg::default().into());
+
+    let mut sut = make_sut();
+    sut.set_encrypter(encrypter);
+
+    let result = sut.encrypt("any_value").await;
+
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        ErrorMsg::default().to_string()
+    );
 }
