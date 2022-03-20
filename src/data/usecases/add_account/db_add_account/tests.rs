@@ -154,3 +154,23 @@ async fn calls_add_account_repository_with_correct_data() {
 
     assert!(unsafe { CALLED })
 }
+
+#[tokio::test]
+async fn returns_err_if_add_account_repository_returns_err() {
+    let mut sut = make_sut();
+    sut.set_add_account_repository(make_add_account_repository(|_| {
+        Err(Box::new(ErrorMsg::default()))
+    }));
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    if let Some(err) = sut.add(account_dto).await.err() {
+        assert_eq!(err.to_string(), ErrorMsg::default().to_string())
+    } else {
+        assert!(false);
+    }
+}
