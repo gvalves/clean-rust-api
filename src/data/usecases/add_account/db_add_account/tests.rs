@@ -1,14 +1,10 @@
 use async_trait::async_trait;
 use tokio;
 
-use crate::{
-    data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter},
-    domain::{
-        entities::account::AccountEntity,
-        usecases::add_account::{AddAccount, AddAccountDto},
-    },
-    ErrorMsg, TError,
-};
+use crate::data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter};
+use crate::domain::entities::account::AccountEntity;
+use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
+use crate::{ErrorMsg, TError};
 
 use super::DbAddAccount;
 
@@ -138,7 +134,7 @@ async fn calls_add_account_repository_with_correct_data() {
 
         assert_eq!(name, "valid_name");
         assert_eq!(email, "valid_email@mail.com");
-        assert_eq!(password, "valid_password");
+        assert_eq!(password, "hashed_password");
 
         Ok(AccountEntity::new("valid_id", &name, &email, &password))
     }));
@@ -175,4 +171,22 @@ async fn returns_err_if_add_account_repository_returns_err() {
     } else {
         assert!(false);
     }
+}
+
+#[tokio::test]
+async fn returns_an_account_on_success() {
+    let sut = make_sut();
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    let account = sut.add(account_dto).await.unwrap();
+
+    assert_eq!(account.id(), "valid_id");
+    assert_eq!(account.name(), "valid_name");
+    assert_eq!(account.email(), "valid_email@mail.com");
+    assert_eq!(account.password(), "hashed_password");
 }
