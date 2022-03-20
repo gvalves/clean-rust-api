@@ -1,90 +1,93 @@
-use async_trait::async_trait;
+use mockall::predicate;
+use mockall_double::double;
 use tokio;
 
-use crate::data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter};
+#[double]
+use crate::data::protocols::add_account_repository::AddAccountRepository;
+#[double]
+use crate::data::protocols::encrypter::Encrypter;
 use crate::domain::entities::account::AccountEntity;
 use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
-use crate::{ErrorMsg, TError};
+use crate::ErrorMsg;
 
 use super::DbAddAccount;
 
+macro_rules! encrypter_encrypt_default {
+    () => {
+        |_| Ok(String::from("hashed_password"))
+    };
+}
+
+macro_rules! add_account_repository_add_default {
+    () => {
+        |account_dto| {
+            let AddAccountDto {
+                name,
+                email,
+                password,
+            } = &account_dto;
+
+            Ok(AccountEntity::new("valid_id", name, email, password))
+        }
+    };
+}
+
 fn make_sut() -> DbAddAccount {
-    let encrypter = make_encrypter(|_| Ok(String::from("hashed_password")));
+    let mut encrypter = make_encrypter();
+    encrypter
+        .expect_encrypt()
+        .returning(encrypter_encrypt_default!());
 
-    let add_account_repository = make_add_account_repository(|account_dto| {
-        let AddAccountDto {
-            name,
-            email,
-            password,
-        } = account_dto;
-
-        Ok(AccountEntity::new("valid_id", &name, &email, &password))
-    });
+    let mut add_account_repository = make_add_account_repository();
+    add_account_repository
+        .expect_add()
+        .returning(add_account_repository_add_default!());
 
     let sut = DbAddAccount::new(encrypter, add_account_repository);
     sut
 }
 
-fn make_encrypter<T>(callback: T) -> Box<dyn Encrypter>
-where
-    T: Fn(&str) -> TError<String> + Send + Sync + 'static,
-{
-    struct EncrypterStub<T>
-    where
-        T: Fn(&str) -> TError<String> + Send + Sync,
-    {
-        callback: T,
-    }
-
-    #[async_trait]
-    impl<T> Encrypter for EncrypterStub<T>
-    where
-        T: Fn(&str) -> TError<String> + Send + Sync,
-    {
-        async fn encrypt(&self, value: &str) -> TError<String> {
-            let callback = &self.callback;
-            callback(value)
-        }
-    }
-
-    Box::new(EncrypterStub { callback })
+fn make_encrypter() -> Box<Encrypter> {
+    Box::new(Encrypter::default())
 }
 
-fn make_add_account_repository<T>(callback: T) -> Box<dyn AddAccountRepository>
-where
-    T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync + 'static,
-{
-    struct AddAccountRepositoryStub<T>
-    where
-        T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
-    {
-        callback: T,
-    }
+fn make_add_account_repository() -> Box<AddAccountRepository> {
+    Box::new(AddAccountRepository::default())
+}
 
-    #[async_trait]
-    impl<T> AddAccountRepository for AddAccountRepositoryStub<T>
-    where
-        T: Fn(AddAccountDto) -> TError<AccountEntity> + Send + Sync,
-    {
-        async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
-            let callback = &self.callback;
-            callback(account_dto)
-        }
-    }
+#[tokio::test]
+async fn calls_encrypter() {
+    let mut encrypter = make_encrypter();
+    encrypter
+        .expect_encrypt()
+        .once()
+        .returning(encrypter_encrypt_default!());
 
-    Box::new(AddAccountRepositoryStub { callback })
+    let mut sut = make_sut();
+    sut.set_encrypter(encrypter);
+
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
+
+    match sut.add(account_dto).await {
+        Ok(_) => {}
+        Err(_) => {}
+    }
 }
 
 #[tokio::test]
 async fn calls_encrypter_with_correct_password() {
-    static mut CALLED: bool = false;
+    let mut encrypter = make_encrypter();
+    encrypter
+        .expect_encrypt()
+        .with(predicate::eq("valid_password"))
+        .returning(encrypter_encrypt_default!());
 
     let mut sut = make_sut();
-    sut.set_encrypter(make_encrypter(|email| {
-        unsafe { CALLED = true }
-        assert_eq!(email, "valid_email@mail.com");
-        Ok(String::new())
-    }));
+    sut.set_encrypter(encrypter);
 
     let account_dto = AddAccountDto {
         name: String::from("valid_name"),
@@ -96,14 +99,18 @@ async fn calls_encrypter_with_correct_password() {
         Ok(_) => {}
         Err(_) => {}
     };
-
-    assert!(unsafe { CALLED });
 }
 
 #[tokio::test]
 async fn returns_err_if_encryter_returns_err() {
+    let mut encrypter = make_encrypter();
+    encrypter
+        .expect_encrypt()
+        .with(predicate::eq("valid_password"))
+        .returning(|_| ErrorMsg::default().into());
+
     let mut sut = make_sut();
-    sut.set_encrypter(make_encrypter(|_| Err(Box::new(ErrorMsg::default()))));
+    sut.set_encrypter(encrypter);
 
     let account_dto = AddAccountDto {
         name: String::from("valid_name"),
@@ -119,25 +126,42 @@ async fn returns_err_if_encryter_returns_err() {
 }
 
 #[tokio::test]
-async fn calls_add_account_repository_with_correct_data() {
-    static mut CALLED: bool = false;
+async fn calls_add_account_repository() {
+    let mut add_account_repository = make_add_account_repository();
+    add_account_repository
+        .expect_add()
+        .once()
+        .returning(add_account_repository_add_default!());
 
     let mut sut = make_sut();
-    sut.set_add_account_repository(make_add_account_repository(|account_dto| {
-        unsafe { CALLED = true }
+    sut.set_add_account_repository(add_account_repository);
 
-        let AddAccountDto {
-            name,
-            email,
-            password,
-        } = account_dto;
+    let account_dto = AddAccountDto {
+        name: String::from("valid_name"),
+        email: String::from("valid_email@mail.com"),
+        password: String::from("valid_password"),
+    };
 
-        assert_eq!(name, "valid_name");
-        assert_eq!(email, "valid_email@mail.com");
-        assert_eq!(password, "hashed_password");
+    match sut.add(account_dto).await {
+        Ok(_) => {}
+        Err(_) => {}
+    }
+}
 
-        Ok(AccountEntity::new("valid_id", &name, &email, &password))
-    }));
+#[tokio::test]
+async fn calls_add_account_repository_with_correct_data() {
+    let mut add_account_repository = make_add_account_repository();
+    add_account_repository
+        .expect_add()
+        .with(predicate::eq(AddAccountDto {
+            name: String::from("valid_name"),
+            email: String::from("valid_email@mail.com"),
+            password: String::from("hashed_password"),
+        }))
+        .returning(add_account_repository_add_default!());
+
+    let mut sut = make_sut();
+    sut.set_add_account_repository(add_account_repository);
 
     let account_dto = AddAccountDto {
         name: String::from("valid_name"),
@@ -149,16 +173,18 @@ async fn calls_add_account_repository_with_correct_data() {
         Ok(_) => {}
         Err(_) => {}
     };
-
-    assert!(unsafe { CALLED })
 }
 
 #[tokio::test]
 async fn returns_err_if_add_account_repository_returns_err() {
+    let mut add_account_repository = make_add_account_repository();
+    add_account_repository
+        .expect_add()
+        .once()
+        .returning(|_| ErrorMsg::default().into());
+
     let mut sut = make_sut();
-    sut.set_add_account_repository(make_add_account_repository(|_| {
-        Err(Box::new(ErrorMsg::default()))
-    }));
+    sut.set_add_account_repository(add_account_repository);
 
     let account_dto = AddAccountDto {
         name: String::from("valid_name"),
