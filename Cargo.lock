@@ -140,6 +140,7 @@ dependencies = [
  "mockall",
  "mockall_double",
  "mongodb",
+ "once_cell",
  "sha2 0.10.2",
  "tokio",
  "validator",
