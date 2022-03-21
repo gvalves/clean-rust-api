@@ -1,7 +1,7 @@
 use mockall::automock;
 use validator::Validate;
 
-use crate::presentation::protocols::email_validator::EmailValidator;
+use crate::presentation::protocols::EmailValidator;
 use crate::GenericResult;
 
 #[cfg(test)]

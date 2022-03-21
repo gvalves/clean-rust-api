@@ -1,7 +1,7 @@
 mod add {
-    use clean_rust_api::data::protocols::add_account_repository::AddAccountRepository;
-    use clean_rust_api::domain::usecases::add_account::AddAccountDto;
-    use clean_rust_api::infra::db::account_mongo_repository::AccountMongoRepository;
+    use clean_rust_api::data::protocols::AddAccountRepository;
+    use clean_rust_api::domain::usecases::AddAccountDto;
+    use clean_rust_api::infra::db::AccountMongoRepository;
 
     #[tokio::test]
     async fn returns_an_account_on_success() {

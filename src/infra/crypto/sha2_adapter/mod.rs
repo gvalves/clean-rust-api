@@ -2,7 +2,8 @@ use async_trait::async_trait;
 use base64ct::{Base64, Encoding};
 use sha2::{Digest, Sha256};
 
-use crate::{data::protocols::encrypter::Encrypter, GenericResult};
+use crate::data::protocols::Encrypter;
+use crate::GenericResult;
 
 #[cfg(test)]
 mod tests;

@@ -3,13 +3,13 @@ use mockall::mock;
 use mongodb::bson::doc;
 use mongodb::results::InsertOneResult;
 
-use crate::data::protocols::add_account_repository::AddAccountRepository;
-use crate::domain::entities::account::AccountEntity;
-use crate::domain::usecases::add_account::AddAccountDto;
-use crate::infra::db::mongo_helper::MongoHelper;
+use crate::data::protocols::AddAccountRepository;
+use crate::domain::entities::AccountEntity;
+use crate::domain::usecases::AddAccountDto;
+use crate::infra::db::MongoHelper;
 use crate::{ErrorMsg, GenericResult};
 
-use super::protocols::account_repository::AccountRepository;
+use super::protocols::AccountRepository;
 
 #[cfg(test)]
 mod tests;

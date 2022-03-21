@@ -2,11 +2,12 @@ use mockall::predicate;
 use mockall_double::double;
 
 #[double]
-use crate::data::protocols::add_account_repository::AddAccountRepository;
+use crate::data::protocols::AddAccountRepository;
 #[double]
-use crate::data::protocols::encrypter::Encrypter;
-use crate::domain::entities::account::AccountEntity;
-use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
+use crate::data::protocols::Encrypter;
+
+use crate::domain::entities::AccountEntity;
+use crate::domain::usecases::{AddAccount, AddAccountDto};
 use crate::ErrorMsg;
 
 use super::DbAddAccount;

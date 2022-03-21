@@ -1,14 +1,15 @@
 use mockall::predicate;
 use mockall_double::double;
 
-use crate::domain::entities::account::AccountEntity;
 #[double]
-use crate::domain::usecases::add_account::AddAccount;
-use crate::domain::usecases::add_account::AddAccountDto;
+use crate::domain::usecases::AddAccount;
+#[double]
+use crate::presentation::protocols::EmailValidator;
+
+use crate::domain::entities::AccountEntity;
+use crate::domain::usecases::AddAccountDto;
 use crate::presentation::http::HttpRequest;
-use crate::presentation::protocols::controller::ControllerProtocol;
-#[double]
-use crate::presentation::protocols::email_validator::EmailValidator;
+use crate::presentation::protocols::ControllerProtocol;
 use crate::ErrorMsg;
 
 use super::{SignUpController, SignUpReqBodyBuilder, SignUpResBody};

@@ -2,8 +2,10 @@ use mockall::predicate;
 use mockall_double::double;
 
 #[double]
-use crate::data::protocols::encrypter::Encrypter as MockEncrypter;
-use crate::{data::protocols::encrypter::Encrypter, ErrorMsg};
+use crate::data::protocols::Encrypter as MockEncrypter;
+
+use crate::data::protocols::Encrypter;
+use crate::ErrorMsg;
 
 use super::Sha2Adapter;
 

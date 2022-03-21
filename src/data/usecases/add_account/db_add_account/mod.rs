@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter};
-use crate::domain::entities::account::AccountEntity;
-use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
+use crate::data::protocols::{AddAccountRepository, Encrypter};
+use crate::domain::entities::AccountEntity;
+use crate::domain::usecases::{AddAccount, AddAccountDto};
 use crate::GenericResult;
 
 #[cfg(test)]

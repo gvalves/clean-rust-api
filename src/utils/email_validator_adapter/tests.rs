@@ -1,7 +1,7 @@
 use mockall::predicate;
 use mockall_double::double;
 
-use crate::presentation::protocols::email_validator::EmailValidator;
+use crate::presentation::protocols::EmailValidator;
 
 #[double]
 use super::EmailValidatorAdapter;
@@ -41,9 +41,10 @@ fn calls_validator_with_correct_email() {
 
 #[test]
 fn calls_validator_when_validate() {
-    use super::EmailValidatorAdapter;
     #[double]
-    use crate::presentation::protocols::email_validator::EmailValidator;
+    use crate::presentation::protocols::EmailValidator;
+
+    use super::EmailValidatorAdapter;
 
     let mut validator = EmailValidator::default();
     validator.expect_is_valid().once().returning(|_| Ok(true));

@@ -1,3 +1,3 @@
-use crate::data::protocols::add_account_repository::AddAccountRepository;
+use crate::data::protocols::AddAccountRepository;
 
 pub trait AccountRepository: AddAccountRepository {}
