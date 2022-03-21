@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq, PartialOrd)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct AccountEntity {
     id: String,
     name: String,

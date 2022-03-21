@@ -201,7 +201,7 @@ impl SignUpReqBodyBuilder {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq)]
 pub enum SignUpResBody {
     Account(AccountEntity),
     Err(ErrorMsg),

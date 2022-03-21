@@ -18,6 +18,11 @@ impl ErrorMsg {
         let msg = String::from(msg);
         Self { msg }
     }
+
+    pub fn parse<T: std::error::Error>(err: T) -> Self {
+        let msg = err.to_string();
+        Self { msg }
+    }
 }
 
 impl Deref for ErrorMsg {
