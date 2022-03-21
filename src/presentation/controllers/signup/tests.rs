@@ -1,6 +1,5 @@
 use mockall::predicate;
 use mockall_double::double;
-use tokio;
 
 use crate::domain::entities::account::AccountEntity;
 #[double]

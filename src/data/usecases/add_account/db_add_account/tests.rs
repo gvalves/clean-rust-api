@@ -1,6 +1,5 @@
 use mockall::predicate;
 use mockall_double::double;
-use tokio;
 
 #[double]
 use crate::data::protocols::add_account_repository::AddAccountRepository;
