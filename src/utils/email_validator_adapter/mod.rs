@@ -2,7 +2,7 @@ use mockall::automock;
 use validator::Validate;
 
 use crate::presentation::protocols::email_validator::EmailValidator;
-use crate::TError;
+use crate::GenericResult;
 
 #[cfg(test)]
 pub mod tests;
@@ -34,7 +34,7 @@ impl Default for EmailValidatorAdapter {
 
 #[automock]
 impl EmailValidator for EmailValidatorAdapter {
-    fn is_valid(&self, email: &str) -> TError<bool> {
+    fn is_valid(&self, email: &str) -> GenericResult<bool> {
         self.validator.is_valid(email)
     }
 }
@@ -54,7 +54,7 @@ impl Default for StdEmailValidator {
 }
 
 impl EmailValidator for StdEmailValidator {
-    fn is_valid(&self, email: &str) -> TError<bool> {
+    fn is_valid(&self, email: &str) -> GenericResult<bool> {
         let email = String::from(email);
         let data = StdEmailValidator { email };
         Ok(data.validate().is_ok())

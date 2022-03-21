@@ -7,7 +7,7 @@ use crate::data::protocols::add_account_repository::AddAccountRepository;
 use crate::domain::entities::account::AccountEntity;
 use crate::domain::usecases::add_account::AddAccountDto;
 use crate::infra::db::mongo_helper::MongoHelper;
-use crate::{ErrorMsg, TError};
+use crate::{ErrorMsg, GenericResult};
 
 use super::protocols::account_repository::AccountRepository;
 
@@ -33,7 +33,7 @@ impl AccountMongoRepository {
 
 #[async_trait]
 impl AddAccountRepository for AccountMongoRepository {
-    async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
+    async fn add(&self, account_dto: AddAccountDto) -> GenericResult<AccountEntity> {
         self.repository.add(account_dto).await
     }
 }
@@ -42,7 +42,7 @@ struct StdAccountRepository;
 
 #[async_trait]
 impl AddAccountRepository for StdAccountRepository {
-    async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
+    async fn add(&self, account_dto: AddAccountDto) -> GenericResult<AccountEntity> {
         let client = MongoHelper::get_client().await;
         let db = client.database("clean-rust-api");
         let account_collection = db.collection::<AccountEntity>("accounts");
@@ -86,7 +86,7 @@ mock! {
 
     #[async_trait]
     impl AddAccountRepository for StdAccountRepository {
-        async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity>;
+        async fn add(&self, account_dto: AddAccountDto) -> GenericResult<AccountEntity>;
     }
 
     impl AccountRepository for StdAccountRepository {}

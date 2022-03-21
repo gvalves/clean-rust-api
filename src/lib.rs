@@ -1,4 +1,4 @@
-use std::{error, fmt::Display, ops::Deref};
+use std::{fmt::Display, ops::Deref};
 
 pub mod data;
 pub mod domain;
@@ -6,7 +6,7 @@ pub mod infra;
 pub mod presentation;
 pub mod utils;
 
-pub trait Error: error::Error + Send + Sync {}
+pub trait SyncError: std::error::Error + Send + Sync {}
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct ErrorMsg {
@@ -39,9 +39,9 @@ impl Display for ErrorMsg {
     }
 }
 
-impl error::Error for ErrorMsg {}
+impl std::error::Error for ErrorMsg {}
 
-impl Error for ErrorMsg {}
+impl SyncError for ErrorMsg {}
 
 impl Default for ErrorMsg {
     fn default() -> Self {
@@ -51,16 +51,22 @@ impl Default for ErrorMsg {
     }
 }
 
-impl From<ErrorMsg> for Box<dyn Error> {
-    fn from(err: ErrorMsg) -> Self {
-        Box::new(err)
-    }
-}
-
-impl<T> From<ErrorMsg> for Result<T, Box<dyn Error>> {
+impl<T> From<ErrorMsg> for Result<T, Box<dyn std::error::Error>> {
     fn from(err: ErrorMsg) -> Self {
         Err(err.into())
     }
 }
 
-pub type TError<T> = Result<T, Box<dyn Error>>;
+impl From<ErrorMsg> for Box<dyn SyncError> {
+    fn from(err: ErrorMsg) -> Self {
+        Box::new(err)
+    }
+}
+
+impl<T> From<ErrorMsg> for Result<T, Box<dyn SyncError>> {
+    fn from(err: ErrorMsg) -> Self {
+        Err(err.into())
+    }
+}
+
+pub type GenericResult<T = (), E = Box<dyn std::error::Error>> = Result<T, E>;

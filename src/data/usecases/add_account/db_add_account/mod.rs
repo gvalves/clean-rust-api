@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::data::protocols::{add_account_repository::AddAccountRepository, encrypter::Encrypter};
 use crate::domain::entities::account::AccountEntity;
 use crate::domain::usecases::add_account::{AddAccount, AddAccountDto};
-use crate::TError;
+use crate::GenericResult;
 
 #[cfg(test)]
 pub mod tests;
@@ -40,7 +40,7 @@ impl DbAddAccount {
 
 #[async_trait]
 impl AddAccount for DbAddAccount {
-    async fn add(&self, account_dto: AddAccountDto) -> TError<AccountEntity> {
+    async fn add(&self, account_dto: AddAccountDto) -> GenericResult<AccountEntity> {
         let hashed_password = self.encrypter.encrypt(&account_dto.password).await?;
 
         self.add_account_repository

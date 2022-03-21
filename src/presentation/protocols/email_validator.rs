@@ -1,8 +1,8 @@
 use mockall::automock;
 
-use crate::TError;
+use crate::GenericResult;
 
 #[automock]
 pub trait EmailValidator: Send + Sync {
-    fn is_valid(&self, email: &str) -> TError<bool>;
+    fn is_valid(&self, email: &str) -> GenericResult<bool>;
 }

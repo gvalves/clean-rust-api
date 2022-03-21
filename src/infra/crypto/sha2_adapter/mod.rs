@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use base64ct::{Base64, Encoding};
 use sha2::{Digest, Sha256};
 
-use crate::{data::protocols::encrypter::Encrypter, TError};
+use crate::{data::protocols::encrypter::Encrypter, GenericResult};
 
 #[cfg(test)]
 mod tests;
@@ -26,7 +26,7 @@ impl Sha2Adapter {
 
 #[async_trait]
 impl Encrypter for Sha2Adapter {
-    async fn encrypt(&self, value: &str) -> TError<String> {
+    async fn encrypt(&self, value: &str) -> GenericResult<String> {
         self.encrypter.encrypt(value).await
     }
 }
@@ -35,7 +35,7 @@ struct StdEncrypter;
 
 #[async_trait]
 impl Encrypter for StdEncrypter {
-    async fn encrypt(&self, value: &str) -> TError<String> {
+    async fn encrypt(&self, value: &str) -> GenericResult<String> {
         let hash = Sha256::digest(value);
         let base64_hash = Base64::encode_string(&hash);
 
