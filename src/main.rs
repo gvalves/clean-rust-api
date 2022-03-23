@@ -1,20 +1,10 @@
-use actix_web::{get, middleware, App, HttpServer, Responder};
-
-#[get("/")]
-async fn hello() -> impl Responder {
-    String::from("Hello World!")
-}
+use actix_web::{App, HttpServer};
+use clean_rust_api::setup_app;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(hello))
+    HttpServer::new(|| App::new().configure(setup_app))
         .bind(("127.0.0.1", 8000))?
         .run()
         .await
-}
-
-#[cfg(test)]
-mod tests {
-    #[actix_web::test]
-    async fn test_hello() {}
 }

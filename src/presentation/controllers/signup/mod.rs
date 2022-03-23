@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 use crate::domain::entities::AccountEntity;
 use crate::domain::usecases::{AddAccount, AddAccountDto};
@@ -107,7 +108,7 @@ fn server_error() -> HttpResponse<SignUpResBody> {
     http_error(500, "internal server error")
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct SignUpReqBody {
     name: String,
     email: String,

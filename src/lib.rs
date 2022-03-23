@@ -1,10 +1,13 @@
 use std::{fmt::Display, ops::Deref};
 
+pub mod app;
 pub mod data;
 pub mod domain;
 pub mod infra;
 pub mod presentation;
 pub mod utils;
+
+pub use app::setup_app;
 
 pub trait SyncError: std::error::Error + Send + Sync {}
 
